@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simple Firebase Chat</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  #messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; }
+  #messages div { margin-bottom: 10px; }
+  #inputArea { margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<h2>Firebase Chat</h2>
+
+<div id="messages"></div>
+
+<div id="inputArea">
+  <input type="text" id="username" placeholder="Your name" />
+  <input type="text" id="messageInput" placeholder="Type a message" />
+  <button id="sendBtn">Send</button>
+</div>
+
+<!-- Firebase App (the core Firebase SDK) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<!-- Firebase Realtime Database -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDD_8mmX0i4dFe2t9i_zBFX8e6kFB5RLAY",
+    authDomain: "your-project-id.firebaseapp.com",
+    databaseURL: "https://your-project-id-default-rtdb.firebaseio.com",
+    projectId: "your-project-id",
+    storageBucket: "your-project-id.appspot.com",
+    messagingSenderId: "your-messaging-sender-id",
+    appId: "your-app-id"
+  };
+
+  // Initialise Firebase
+  firebase.initializeApp(firebaseConfig);
+
+  const db = firebase.database();
+  const messagesRef = db.ref('messages');
+
+  const messagesDiv = document.getElementById('messages');
+  const usernameInput = document.getElementById('username');
+  const messageInput = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
+
+  // Send message function
+  sendBtn.onclick = () => {
+    const username = usernameInput.value.trim() || 'Anonymous';
+    const message = messageInput.value.trim();
+
+    if (!message) return;
+
+    const newMessageRef = messagesRef.push();
+    newMessageRef.set({
+      username,
+      message,
+      timestamp: Date.now()
+    });
+
+    messageInput.value = '';
+  };
+
+  // Listen for new messages
+  messagesRef.on('child_added', (snapshot) => {
+    const data = snapshot.val();
+    const messageElement = document.createElement('div');
+    const time = new Date(data.timestamp).toLocaleTimeString();
+
+    messageElement.textContent = `[${time}] ${data.username}: ${data.message}`;
+    messagesDiv.appendChild(messageElement);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  });
+</script>
+
+</body>
+</html>
