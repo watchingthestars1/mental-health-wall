@@ -2,62 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mental Health Support Wall</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 2em;
-      background: #f0f4f8;
-    }
-    h1 {
-      text-align: center;
-    }
-    form {
-      display: flex;
-      flex-direction: column;
-      max-width: 500px;
-      margin: 1em auto;
-    }
-    textarea {
-      padding: 1em;
-      font-size: 1em;
-      resize: vertical;
-      min-height: 100px;
-    }
-    button {
-      margin-top: 1em;
-      padding: 0.75em;
-      font-size: 1em;
-      cursor: pointer;
-      background-color: #4caf50;
-      color: white;
-      border: none;
-    }
-    .message {
-      background: white;
-      padding: 1em;
-      margin: 1em auto;
-      border-radius: 5px;
-      max-width: 500px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-  </style>
 </head>
 <body>
   <h1>Mental Health Support Wall</h1>
-  <form id="messageForm">
-    <textarea id="messageInput" placeholder="Write a positive message or advice..." required></textarea>
-    <button type="submit">Post Message</button>
-  </form>
+  <ul id="messages"></ul>
 
-  <div id="messagesContainer"></div>
+  <input type="text" id="messageInput" placeholder="Write a message..." />
+  <button id="sendBtn">Send</button>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"></script>
 
   <script>
+    // Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDD_8mmX0i4dFe2t9i_zBFX8e6kFB5RLAY",
       authDomain: "mental-health-wall.firebaseapp.com",
@@ -68,39 +28,35 @@
       measurementId: "G-JXCEQXYL08"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    // Initialise Firebase
+    const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const form = document.getElementById('messageForm');
+    const messagesList = document.getElementById('messages');
     const messageInput = document.getElementById('messageInput');
-    const messagesContainer = document.getElementById('messagesContainer');
+    const sendBtn = document.getElementById('sendBtn');
 
-    // Submit new message
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    // Listen for real-time updates
+    db.collection('messages').orderBy('timestamp').onSnapshot(snapshot => {
+      messagesList.innerHTML = '';
+      snapshot.forEach(doc => {
+        const li = document.createElement('li');
+        li.textContent = doc.data().text;
+        messagesList.appendChild(li);
+      });
+    });
+
+    // Send message
+    sendBtn.addEventListener('click', () => {
       const text = messageInput.value.trim();
       if (text) {
-        await db.collection('messages').add({
-          text,
+        db.collection('messages').add({
+          text: text,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
         messageInput.value = '';
       }
     });
-
-    // Load messages in real time
-    db.collection('messages')
-      .orderBy('timestamp', 'desc')
-      .onSnapshot(snapshot => {
-        messagesContainer.innerHTML = '';
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const div = document.createElement('div');
-          div.className = 'message';
-          div.textContent = data.text;
-          messagesContainer.appendChild(div);
-        });
-      });
   </script>
 </body>
 </html>
