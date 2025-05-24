@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Simple Firebase Chat</title>
+<title>Firebase Chat</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; }
   #messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; }
   #messages div { margin-bottom: 10px; }
   #inputArea { margin-top: 10px; }
+  input[type="text"] { padding: 5px; width: 200px; }
+  button { padding: 5px 10px; }
 </style>
 </head>
 <body>
@@ -29,7 +31,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script>
-  // Your web app's Firebase configuration
+  // Firebase configuration - replace placeholders with your Firebase project info
   const firebaseConfig = {
     apiKey: "AIzaSyDD_8mmX0i4dFe2t9i_zBFX8e6kFB5RLAY",
     authDomain: "your-project-id.firebaseapp.com",
@@ -51,15 +53,13 @@
   const messageInput = document.getElementById('messageInput');
   const sendBtn = document.getElementById('sendBtn');
 
-  // Send message function
+  // Send message
   sendBtn.onclick = () => {
     const username = usernameInput.value.trim() || 'Anonymous';
     const message = messageInput.value.trim();
-
     if (!message) return;
 
-    const newMessageRef = messagesRef.push();
-    newMessageRef.set({
+    messagesRef.push({
       username,
       message,
       timestamp: Date.now()
@@ -69,11 +69,10 @@
   };
 
   // Listen for new messages
-  messagesRef.on('child_added', (snapshot) => {
+  messagesRef.on('child_added', snapshot => {
     const data = snapshot.val();
-    const messageElement = document.createElement('div');
     const time = new Date(data.timestamp).toLocaleTimeString();
-
+    const messageElement = document.createElement('div');
     messageElement.textContent = `[${time}] ${data.username}: ${data.message}`;
     messagesDiv.appendChild(messageElement);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
