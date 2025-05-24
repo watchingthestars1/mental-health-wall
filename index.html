@@ -5,66 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mental Health Support Wall</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-      background: #f7f9fc;
-      color: #333;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 1rem;
-    }
-    form {
-      display: flex;
-      margin-bottom: 1rem;
-    }
-    input[type="text"] {
-      flex: 1;
-      padding: 0.5rem;
-      font-size: 1rem;
-    }
-    button {
-      padding: 0.5rem 1rem;
-      font-size: 1rem;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    ul#messages {
-      list-style: none;
-      padding: 0;
-    }
-    ul#messages li {
-      background: white;
-      margin-bottom: 0.5rem;
-      padding: 0.75rem 1rem;
-      border-radius: 5px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      word-wrap: break-word;
-    }
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+    #messages { border: 1px solid #ccc; padding: 1rem; min-height: 200px; overflow-y: auto; margin-bottom: 1rem; }
+    .message { border-bottom: 1px solid #eee; padding: 0.5rem 0; }
+    form { display: flex; }
+    input[type="text"] { flex: 1; padding: 0.5rem; font-size: 1rem; }
+    button { padding: 0 1rem; font-size: 1rem; }
   </style>
 </head>
 <body>
   <h1>Mental Health Support Wall</h1>
+  <div id="messages"></div>
+
   <form id="message-form">
-    <input type="text" id="message-input" placeholder="Write a message..." autocomplete="off" required />
+    <input type="text" id="message-input" placeholder="Write a message..." autocomplete="off" />
     <button type="submit">Send</button>
   </form>
-  <ul id="messages"></ul>
 
   <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script>
-    // Your Firebase configuration (replace with your actual config)
+    // Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDD_8mmX0i4dFe2t9i_zBFX8e6kFB5RLAY",
       authDomain: "mental-health-wall.firebaseapp.com",
@@ -81,17 +44,58 @@
 
     const form = document.getElementById('message-form');
     const input = document.getElementById('message-input');
-    const messagesList = document.getElementById('messages');
+    const messagesDiv = document.getElementById('messages');
 
-    // Submit new message to Firestore
+    // Swear words list
+    const bannedWords = [
+      'a', 'arse', 'arsehead', 'arsehole', 'ass', 'ass hole', 'asshole',
+      'bastard', 'bitch', 'bloody', 'bollocks', 'brotherfucker', 'bugger', 'bullshit',
+      'child-fucker', 'christ on a bike', 'christ on a cracker', 'cock', 'cocksucker', 'crap', 'cunt',
+      'dammit', 'damn', 'damned', 'damn it', 'dick', 'dick-head', 'dickhead', 'dumb ass', 'dumb-ass', 'dumbass', 'dyke',
+      'fag', 'faggot', 'father-fucker', 'fatherfucker', 'fuck', 'fucked', 'fucker', 'fucking',
+      'god dammit', 'goddammit', 'god damn', 'goddamn', 'goddamned', 'goddamnit', 'godsdamn',
+      'hell', 'holy shit', 'horseshit',
+      'in shit',
+      'jackarse', 'jack-ass', 'jackass', 'jesus christ', 'jesus fuck', 'jesus harold christ', 'jesus h. christ', 'jesus, mary and joseph', 'jesus wept',
+      'kike',
+      'mother fucker', 'mother-fucker', 'motherfucker',
+      'nigger', 'nigga', 'nigra',
+      'pigfucker', 'piss', 'prick', 'pussy',
+      'shit', 'shit ass', 'shite', 'sibling fucker', 'sisterfuck', 'sisterfucker', 'slut', 'son of a bitch', 'son of a whore', 'spastic', 'sweet jesus',
+      'tranny', 'twat',
+      'wanker'
+    ];
+
+    // Listen for new messages and update UI
+    db.collection('messages').orderBy('timestamp', 'asc').onSnapshot(snapshot => {
+      messagesDiv.innerHTML = ''; // clear
+      snapshot.forEach(doc => {
+        const msg = doc.data();
+        const div = document.createElement('div');
+        div.classList.add('message');
+        div.textContent = msg.text;
+        messagesDiv.appendChild(div);
+      });
+      messagesDiv.scrollTop = messagesDiv.scrollHeight; // scroll to bottom
+    });
+
+    // Submit message with filter
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const text = input.value.trim();
+      const text = input.value.trim().toLowerCase();
+
+      // Check banned words
+      const containsBanned = bannedWords.some(word => text.includes(word));
+      if (containsBanned) {
+        alert('Your message contains inappropriate language. Please edit and try again.');
+        return;
+      }
+
       if (text === '') return;
 
       try {
         await db.collection('messages').add({
-          text: text,
+          text: input.value.trim(),
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
         input.value = '';
@@ -100,19 +104,6 @@
         alert('Failed to send message.');
       }
     });
-
-    // Listen for realtime updates to messages collection, ordered by timestamp
-    db.collection('messages')
-      .orderBy('timestamp', 'asc')
-      .onSnapshot(snapshot => {
-        messagesList.innerHTML = ''; // Clear current messages
-        snapshot.forEach(doc => {
-          const message = doc.data();
-          const li = document.createElement('li');
-          li.textContent = message.text || '[Empty message]';
-          messagesList.appendChild(li);
-        });
-      });
   </script>
 </body>
 </html>
